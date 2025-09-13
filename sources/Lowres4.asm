@@ -6,7 +6,17 @@
 
 ; V.1.0 beta
 ; - 1st release
+; V.1.1 beta
+; - code optimized
+; - font colour now less brighter
+; - 8xy command handler added
+; - only used module fx commands code enabled
 
+
+; 8xy command
+; 810	vertical scroll sprites in
+; 811	vertical scroll sprites out
+; 82y	select new sprite movement [0..2]
 
 
 ; Execution time 68000: 239 rasterlines
@@ -338,7 +348,7 @@ ss_x_angle_speed		EQU 2
 ss_x_distance			EQU 14
 ss_y_center			EQU display_window_vstart+((visible_lines_number-ss_image_y_size)/2)
 ss_y_radius			EQU (visible_lines_number-ss_image_y_size)/2
-ss_y_angle_speed		EQU 3
+ss_y_angle_speed		EQU 3 ; 9, 10
 ss_y_distance			EQU 14
 
 ss_objects_per_sprite_number	EQU ss_reused_sprites_number/ss_used_sprites_number
@@ -401,7 +411,7 @@ cl1_ext1_BPL3PTH		RS.L 1
 cl1_ext1_BPL3PTL		RS.L 1
 cl1_ext1_BPL4PTH		RS.L 1
 cl1_ext1_BPL4PTL		RS.L 1
-cl1_ext1_WAIT2			RS.L 1
+cl1_ext1_WAIT			RS.L 1
 cl1_ext1_BPLCON0		RS.L 1
 
 cl1_extension1_size		RS.B 0
@@ -464,7 +474,7 @@ cl1_ext5_BPL2PTH		RS.L 1
 cl1_ext5_BPL2PTL		RS.L 1
 cl1_ext5_BPL3PTH		RS.L 1
 cl1_ext5_BPL3PTL		RS.L 1
-cl1_ext5_WAIT2			RS.L 1
+cl1_ext5_WAIT			RS.L 1
 cl1_ext5_BPLCON0		RS.L 1
 
 cl1_extension5_size		RS.B 0
@@ -1017,7 +1027,7 @@ cl1_vp1_init_bpldat
 	move.w	#BPL2DAT,d2
 	move.w	#BPL3DAT,d3
 	move.w	#BPL4DAT,d4
-	move.l	#1<<24,d6
+	move.l	#1<<24,d5
 	MOVEF.W vp1_visible_lines_number-1,d7
 cl1_vp1_init_bpldat_loop
 	move.l	d0,(a0)+		; CWAIT
@@ -1030,7 +1040,7 @@ cl1_vp1_init_bpldat_loop
 	move.w	d1,(a0)+		; BPL1DAT
 	move.w	(a1),(a0)+		; 1st word bitplane 1
 	ADDF.W	lg_image_plane_width*lg_image_depth,a1 ; next line in source
-	add.l	d6,d0			; next line in cl
+	add.l	d5,d0			; next line in cl
 	dbf	d7,cl1_vp1_init_bpldat_loop
 	rts
 
@@ -1267,8 +1277,8 @@ tw_stop_textwriter
 
 
 ; Input
-; a0.l		character image
-; a1.l	 bitplane 1
+; a0.l	character image
+; a1.l	bitplane 1
 ; a2.l	Plane width
 ; a4.l	Plane width character image
 ; Result
@@ -1345,6 +1355,7 @@ tw_display_cursor_quit
 
 	CNOP 0,4
 cl1_update_bpl1dat
+	WAITBLIT
 	MOVEF.L	extra_pf2_plane_width*extra_pf2_depth,d1
 	MOVEF.L cl1_extension6_size,d2
 	move.l	extra_pf2(a3),a0
@@ -1355,9 +1366,9 @@ cl1_update_bpl1dat
 cl1_update_bpl1dat_loop
 	REPT 16
 		move.w	extra_pf2_plane_width*2(a0),cl1_ext6_BPL3DAT-cl1_ext6_BPL1DAT(a1) ; 1st word bitplane 3
-		move.w	extra_pf2_plane_width*1(a0),cl1_ext6_BPL2DAT-cl1_ext6_BPL1DAT(a1) ; 1st word bitplane 2
 		move.w	(a0),(a1)	; 1st word bitplane 1
 		add.l	d1,a0		; next line in playfield
+		move.w	(extra_pf2_plane_width*1)-(extra_pf2_plane_width*extra_pf2_depth)(a0),cl1_ext6_BPL2DAT-cl1_ext6_BPL1DAT(a1) ; 1st word bitplane 2
 		add.l	d2,a1		; next line in cl
 	ENDR
 	dbf	d7,cl1_update_bpl1dat_loop
@@ -1577,7 +1588,7 @@ vp1_pf1_rgb4_color_table
 
 	CNOP 0,2
 vp2_pf1_rgb4_color_table
-	DC.W color00_bits,$fff,$081,color00_bits ; text colors
+	DC.W color00_bits,$eee,$081,color00_bits ; text colors
 	DC.W color00_bits,color00_bits,color00_bits
 	DC.W $931			; cursor color
 

@@ -15,3 +15,13 @@ Gap:       10 Zeilen
 Viewport2: 352x176x8
 
 Overscan-Sprites
+
+Sprites
+
+MOD-Pos  5 command 810, 820
+MOD-Pos  9 command 811
+MOD-Pos 14 command 810, 821
+MOD-Pos 17 command 822
+MOD-Pos 21 command 820
+MOD-Pos 33 command 811, 810, 821
+MOD-Pos 36 command 811
