@@ -6,20 +6,22 @@
 
 ; V.1.0 beta
 ; - 1st release
+
 ; V.1.1 beta
 ; - code optimized
 ; - font colour now less brighter
 ; - 8xy command handler added
 ; - only used module fx commands code enabled
+; - sprites movement synced with music
 
 
 ; 8xy command
-; 810	vertical scroll sprites in
-; 811	vertical scroll sprites out
-; 82y	select new sprite movement [0..2]
+; 810	scroll sprites bottom in
+; 811	scroll sprites bottom out
+; 82y	select sprite movement [0..3]
 
 
-; Execution time 68000: 239 rasterlines
+; Execution time 68000: 256 rasterlines
 
 
 	MC68000
@@ -78,7 +80,7 @@ text_output_enabled     	EQU FALSE
 
 ; PT-Replay
 pt_ciatiming_enabled		EQU TRUE
-pt_usedfx			EQU %1111011000111100
+pt_usedfx			EQU %1111111100111100
 pt_usedefx			EQU %0000001001000000
 pt_mute_enabled			EQU FALSE
 pt_music_fader_enabled		EQU TRUE
@@ -176,7 +178,7 @@ ciaa_ta_time			EQU 0
 ciaa_tb_time			EQU 0
 	IFEQ pt_ciatiming_enabled
 ciab_ta_time			EQU 14187 ; = 0.709379 MHz * [20000 µs = 50 Hz duration for one frame on a PAL machine]
-;ciab_ta_time			EQU 14318 ; = 0.715909 MHz * [20000 µs = 50 Hz duration for one frame on a NTSC machine]
+; ciab_ta_time			EQU 14318 ; = 0.715909 MHz * [20000 µs = 50 Hz duration for one frame on a NTSC machine]
 	ELSE
 ciab_ta_time			EQU 0
 	ENDC
@@ -375,6 +377,16 @@ tf_rgb4_colors_number		EQU vp2_pf1_colors_number-1
 ; Textwriter-Fader-Out
 tfo_rgb4_fader_speed		EQU 1
 tfo_delay			EQU 2
+
+; Scroll-Sprites-Bottom
+ssb_y_radius			EQU visible_lines_number
+ssb_y_center			EQU visible_lines_number
+
+; Scroll-Sprites-Bottom-In
+ssbi_y_angle_speed		EQU 4
+
+; Scroll-Sprites-Bottom-Out
+ssbo_y_angle_speed		EQU 2
 
 
 vp1_pf1_plane_x_offset		EQU 16
@@ -773,6 +785,8 @@ spr7_y_size2			EQU sprite7_size/4
 		INCLUDE "music-tracker/pt3-variables.i"
 	ENDC
 
+pt_effects_handler_active	RS.W 1
+
 ; Textwriter
 tw_active			RS.W 1
 	RS_ALIGN_LONGWORD
@@ -788,9 +802,12 @@ tw_cursor_y_position		RS.W 1
 tw_delay_counter		RS.W 1
 
 ; Sine-Sprites
+ss_sprites_visible		RS.W 1
+ss_variable_y_center		RS.W 1
 ss_x_radius_angle		RS.W 1
 ss_x_angle			RS.W 1
 ss_y_angle			RS.W 1
+ss_variable_y_speed		RS.W 1
 
 ; Logo-Fader
 lf_rgb4_colors_counter		RS.W 1
@@ -811,6 +828,14 @@ tf_rgb4_copy_colors_active	RS.W 1
 ; Textwriter-Fader-Out
 tfo_rgb4_active			RS.W 1
 tfo_delay_counter		RS.W 1
+
+; Scroll-Sprites-Bottom-In
+ssbi_active			RS.W 1
+ssbi_y_angle			RS.W 1
+
+; Scroll-Sprites-Bottom-Out
+ssbo_active			RS.W 1
+ssbo_y_angle			RS.W 1
 
 ; Main 
 stop_fx_active			RS.W 1
@@ -835,12 +860,14 @@ init_main_variables
 		PT3_INIT_VARIABLES
 	ENDC
 
+	moveq	#TRUE,d0
+	move.w	d0,pt_effects_handler_active(a3)
+
 ; Textwriter
 	moveq	#FALSE,d1
 	move.w	d1,tw_active(a3)
 	lea	tw_image_data,a0
 	move.l	a0,tw_image(a3)
-	moveq	#TRUE,d0
 	move.w	d0,tw_text_table_start(a3)
 	move.w	d0,tw_text_char_x_position(a3)
 	move.w	d0,tw_text_char_y_position(a3)
@@ -852,9 +879,12 @@ init_main_variables
 	move.w	d1,tw_delay_counter(a3)	; disable counter
 
 ; Sine-Sprites
-	move.w	#(sine_table_length/4)*WORD_SIZE,ss_x_radius_angle(a3)
-	move.w	#(sine_table_length/4)*WORD_SIZE,ss_x_angle(a3)
-	clr.w	ss_y_angle(a3)
+	move.w	d1,ss_sprites_visible(a3)
+	move.w	#ss_y_center+ssb_y_radius,ss_variable_y_center(a3)
+	move.w	#(sine_table_length/4)*WORD_SIZE,ss_x_radius_angle(a3) ; 90°
+	move.w	#(sine_table_length/4)*WORD_SIZE,ss_x_angle(a3) ; 90°
+	move.w	d0,ss_y_angle(a3) ; 0°
+	move.w	d0,ss_variable_y_speed(a3)
 
 ; Logo-Fader
 	move.w	#lf_rgb4_colors_number*3,lf_rgb4_colors_counter(a3)
@@ -876,6 +906,14 @@ init_main_variables
 ; Textwriter-Fader-Out
 	move.w	d1,tfo_rgb4_active(a3)
 	move.w	#tfo_delay,tfo_delay_counter(a3)
+
+; Scroll-Sprites-Bottom-In
+	move.w	d1,ssbi_active(a3)
+	move.w	d0,ssbi_y_angle(a3)	; 0°
+
+; Scroll-Sprites-Bottom-Out
+	move.w	d1,ssbo_active(a3)
+	move.w	#(sine_table_length/4)*WORD_SIZE,ssbo_y_angle(a3) ; 90°
 
 ; Main 
 	move.w	d1,stop_fx_active(a3)
@@ -1265,6 +1303,8 @@ beam_routines
 	bsr	rgb4_logo_fader_in
 	bsr	rgb4_logo_fader_out
 	bsr	rgb4_textwriter_fader_out
+	bsr	scroll_sprites_bottom_in
+	bsr	scroll_sprites_bottom_out
 	bsr	mouse_handler
 	bsr	control_counters
 	tst.w	stop_fx_active(a3)
@@ -1469,14 +1509,14 @@ ss_calculate_xy_coordinates
 	and.w	d6,d0			; remove overflow
 	move.w	d0,ss_x_angle(a3)	
 	move.w	d5,d0		
-	addq.w	#ss_y_angle_speed*WORD_SIZE,d0
+	add.w	ss_variable_y_speed(a3),d0
 	and.w	d6,d0			; remove overflow
 	move.w	d0,ss_y_angle(a3)	
 	lea	sine_table(pc),a0	
 	lea	ss_xy_coordinates(pc),a1
 	move.w	#ss_x_center,a2
+	move.w	ss_variable_y_center(a3),a4
 	move.w	#ss_x_distance*WORD_SIZE,a3
-	move.w	#ss_y_center,a4
 	move.w	#ss_x_radius_angle_step*WORD_SIZE,a5
 	move.w	#ss_y_distance*WORD_SIZE,a6
 	moveq	#ss_reused_sprites_number-1,d7
@@ -1673,6 +1713,61 @@ rgb4_textwriter_fader_out_quit
 
 
 	CNOP 0,4
+scroll_sprites_bottom_in
+	move.l	a4,-(a7)
+	tst.w	ssbi_active(a3)
+	bne.s	scroll_sprites_bottom_in_quit
+	move.w	ssbi_y_angle(a3),d2
+	cmp.w	#(sine_table_length/4)*WORD_SIZE,d2 ; 90° ?
+	ble.s	scroll_sprites_bottom_in_skip
+	move.w	#FALSE,ssbi_active(a3)
+	clr.w	ss_sprites_visible(a3)
+	bra.s	scroll_sprites_bottom_in_quit
+	CNOP 0,4
+scroll_sprites_bottom_in_skip
+	lea	sine_table(pc),a0
+	move.w	(a0,d2.w),d0		; sin(w)
+	MULSF.W	ssb_y_radius*2,d0,d1	; y'=yr*cos(w)/2^16
+	swap	d0
+	add.w	#ssb_y_center,d0
+	add.w	#ss_y_center,d0		; vertical centering
+	move.w	d0,ss_variable_y_center(a3)
+	addq.w	#ssbi_y_angle_speed*WORD_SIZE,d2
+	move.w	d2,ssbi_y_angle(a3)
+scroll_sprites_bottom_in_quit
+	move.l	(a7)+,a4
+	rts
+
+
+	CNOP 0,4
+scroll_sprites_bottom_out
+	move.l	a4,-(a7)
+	tst.w	ssbo_active(a3)
+	bne.s	scroll_sprites_bottom_out_quit
+	move.w	ssbo_y_angle(a3),d2
+	cmp.w	#(sine_table_length/2)*WORD_SIZE,d2 ; 180° ?
+	ble.s	scroll_sprites_bottom_out_skip
+	moveq	#FALSE,d0
+	move.w	d0,ssbo_active(a3)
+	move.w	d0,ss_sprites_visible(a3)
+	bra.s	scroll_sprites_bottom_out_quit
+	CNOP 0,4
+scroll_sprites_bottom_out_skip
+	lea	sine_table(pc),a0
+	move.w	(a0,d2.w),d0		; sin(w)
+	MULSF.W	ssb_y_radius*2,d0,d1	; y'=yr*cos(w)/2^16
+	swap	d0
+	add.w	#ssb_y_center,d0
+	add.w	#ss_y_center,d0		; vertical centering
+	move.w	d0,ss_variable_y_center(a3)
+	addq.w	#ssbi_y_angle_speed*WORD_SIZE,d2
+	move.w	d2,ssbo_y_angle(a3)
+scroll_sprites_bottom_out_quit
+	move.l	(a7)+,a4
+	rts
+
+
+	CNOP 0,4
 mouse_handler
 	btst	#CIAB_GAMEPORT0,CIAPRA(a4) ; LMB pressed ?
 	bne.s	mouse_handler_quit
@@ -1686,6 +1781,11 @@ mouse_handler_skip
 	move.w	d0,lf_rgb4_copy_colors_active(a3)
 	move.w	d0,tfo_rgb4_active(a3)
 	move.w	d0,tf_rgb4_copy_colors_active(a3)
+	move.w	ssbo_y_angle(a3),d1
+	tst.w	ss_sprites_visible(a3)
+	bne.s	mouse_handler_quit
+	move.w	d0,ssbo_active(a3)
+	move.w	#(sine_table_length/4)*WORD_SIZE,ssbo_y_angle(a3) ; 90°
 mouse_handler_quit
 	rts
 
@@ -1729,12 +1829,47 @@ VERTB_server
 		CNOP 0,4
 	ENDC
 
-	IFD PROTRACKER_VERSION_2
-		PT2_REPLAY
+	IFD PROTRACKER_VERSION_2 
+		PT2_REPLAY pt_effects_handler
 	ENDC
+
 	IFD PROTRACKER_VERSION_3
-		PT3_REPLAY
+		PT3_REPLAY pt_effects_handler
 	ENDC
+
+	CNOP 0,4
+pt_effects_handler
+	tst.w	pt_effects_handler_active(a3)
+	bne.s	pt_effects_handler_quit
+	move.b	n_cmdlo(a2),d0
+	cmp.b	#$10,d0
+	beq.s	pt_scroll_sprites_bottom_in
+	cmp.b	#$11,d0
+	beq.s	pt_scroll_sprites_bottom_out
+	lsr.b	#4,d0			; 80y
+	cmp.b	#2,D0
+	beq.s	pt_select_sprite_movement
+pt_effects_handler_quit
+	rts
+	CNOP 0,4
+pt_scroll_sprites_bottom_in
+	moveq	#TRUE,d0
+	move.w	d0,ssbi_active(a3)
+	move.w	d0,ssbi_y_angle(a3)	; 0°
+	rts
+	CNOP 0,4
+pt_scroll_sprites_bottom_out
+	clr.w	ssbo_active(a3)
+	move.w	#(sine_table_length/4)*WORD_SIZE,ssbo_y_angle(a3) ; 90°
+	rts
+	CNOP 0,4
+pt_select_sprite_movement
+	moveq	#NIBBLE_MASK_LOW,d0
+	and.b	n_cmdlo(a2),d0
+	MULUF.W	WORD_SIZE,d0,d2
+	lea	ss_movements(pc),a0
+	move.w	(a0,d0.w),ss_variable_y_speed(a3)
+	rts
 
 	CNOP 0,4
 ciab_tb_server
@@ -1916,6 +2051,13 @@ ss_xy_starts
 	CNOP 0,2
 ss_xy_coordinates
 	DS.W ss_objects_number*2
+
+	CNOP 0,2
+ss_movements
+	DC.W 3*WORD_SIZE
+	DC.W 9*WORD_SIZE
+	DC.W 12*WORD_SIZE
+	DC.W 14*WORD_SIZE
 
 
 ; Logo-Fader-In
