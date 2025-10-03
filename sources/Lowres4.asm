@@ -60,11 +60,11 @@
 	INCLUDE "hardware/intbits.i"
 
 
+	INCDIR "custom-includes-ocs:"
+
+
 SET_SECOND_COPPERLIST		SET 1
 PROTRACKER_VERSION_3		SET 1
-
-
-	INCDIR "custom-includes-ocs:"
 
 
 	INCLUDE "macros.i"
