@@ -18,6 +18,18 @@
 ; - bugfix: colours counter now reset before logo is faded out
 ; - bugfix: wrong 8 fx command in module was not triggering a different speed
 
+; V.1.3 beta
+; - Optic's logo included
+; - Optic's font included
+; - Cursor colour changed
+; - Ball's colours changed
+
+; V.1.4 beta
+; - Optic's updated logo included
+; - Optic's updated font included
+; - Cursor color changed
+; - Optic's hearts included
+
 
 ; 8xy command
 ; 810	scroll sprites bottom in
@@ -272,7 +284,7 @@ vp2_pf1_plane_moduli		EQU (extra_pf2_plane_width*(extra_pf2_depth-1))+extra_pf2_
 diwstrt_bits			EQU ((display_window_vstart&$ff)*DIWSTRTF_V0)|(display_window_hstart&$ff)
 diwstop_bits			EQU ((display_window_vstop&$ff)*DIWSTOPF_V0)|(display_window_hstop&$ff)
 bplcon0_bits			EQU BPLCON0F_COLOR|(pf_depth*BPLCON0F_BPU0)
-color00_bits			EQU $000
+color00_bits			EQU $201
 
 ; Viewport 1
 vp1_ddfstrt_bits		EQU DDFSTRT_320_PIXEL
@@ -280,7 +292,7 @@ vp1_ddfstop_bits		EQU DDFSTOP_OVERSCAN_16_PIXEL
 vp1_bplcon0_bits1		EQU BPLCON0F_COLOR|(extra_pf1_depth*BPLCON0F_BPU0)
 vp1_bplcon0_bits2		EQU BPLCON0F_COLOR
 vp1_bplcon1_bits		EQU 0
-vp1_bplcon2_bits		EQU 0 ; sprites behind playfield 1
+vp1_bplcon2_bits		EQU 0	; sprites behind playfield 1
 vp1_color00_bits		EQU color00_bits
 
 ; Viewport 2
@@ -1907,16 +1919,16 @@ vp1_pf1_rgb4_color_table
 
 	CNOP 0,2
 vp2_pf1_rgb4_color_table
-	DC.W color00_bits,$eee,$081,color00_bits ; text colors
+	INCLUDE "Lowres4:colortables/16x15x4-Font.ct"
 	DC.W color00_bits,color00_bits,color00_bits
-	DC.W $931			; cursor color
+	DC.W $59b			; cursor color
 
 	CNOP 0,2
 spr_rgb4_color_table
-	DC.W color00_bits,$08f,$048,$024
-	DC.W color00_bits,$08f,$048,$024
-	DC.W color00_bits,$08f,$048,$024
-	DC.W color00_bits,$08f,$048,$024
+	INCLUDE "Lowres4:colortables/7x7x4-Heart.ct"
+	INCLUDE "Lowres4:colortables/7x7x4-Heart.ct"
+	INCLUDE "Lowres4:colortables/7x7x4-Heart.ct"
+	INCLUDE "Lowres4:colortables/7x7x4-Heart.ct"
 
 
 	CNOP 0,4
@@ -2039,7 +2051,7 @@ sine_table
 
 ; Textwriter
 tw_ascii
-	DC.B "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.!?-'():\/#*@ß$§ "
+	DC.B "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.!?-'():\/&<>#*°¹²³³@+ "
 tw_ascii_end
 	EVEN
 
@@ -2098,8 +2110,8 @@ tfo_rgb4_color_table
 
 	DC.B "$VER: "
 	DC.B "Lowres4Intro "
-	DC.B "1.2 beta "
-	DC.B "(20.9.25) "
+	DC.B "1.4 beta "
+	DC.B "(8.11.25) "
 	DC.B "© 2025 by Resistance",0
 	EVEN
 
@@ -2127,12 +2139,12 @@ tw_text_end
 ; PT-Replay
 	IFEQ pt_split_module_enabled
 pt_auddata			SECTION pt_audio,DATA
-		INCBIN "Lowres4:Modules/MOD.beats'n'bits.song"
+		INCBIN "Lowres4:trackermodules/MOD.beats'n'bits.song"
 pt_audsmps			SECTION pt_audio2,DATA_C
-		INCBIN "Lowres4:Modules/MOD.beats'n'bits.smps"
+		INCBIN "Lowres4:trackermodules/MOD.beats'n'bits.smps"
 	ELSE
 pt_auddata			SECTION pt_audio,DATA_C
-		INCBIN "Lowres4:Modules/MOD.beats'n'bits"
+		INCBIN "Lowres4:trackermodules/MOD.beats'n'bits"
 	ENDC
 
 
@@ -2148,6 +2160,6 @@ tw_image_data			SECTION tw_gfx,DATA
 
 ; Sine-Sprites
 ss_image_data			SECTION ss_gfx,DATA
-	INCBIN "Lowres4:graphics/7x7x4-Bubble.rawblit"
+	INCBIN "Lowres4:graphics/7x7x4-Heart.rawblit"
 
 	END
