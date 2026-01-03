@@ -491,10 +491,10 @@ cl1_ext1_BPL3PTH		RS.L 1
 cl1_ext1_BPL3PTL		RS.L 1
 cl1_ext1_BPL4PTH		RS.L 1
 cl1_ext1_BPL4PTL		RS.L 1
-cl1_ext1_WAIT			RS.L 1
-cl1_ext1_BPLCON0		RS.L 1
 cl1_ext1_COP1LCH		RS.L 1
 cl1_ext1_COP1LCL		RS.l 1
+cl1_ext1_WAIT			RS.L 1
+cl1_ext1_BPLCON0		RS.L 1
 cl1_ext1_COPJMP2		RS.L 1
 
 cl1_extension1_size		RS.B 0
@@ -1148,8 +1148,8 @@ init_first_copperlist
 	bsr	cl1_vp1_init_playfield_props
 	bsr	cl1_vp1_init_colors
 	bsr	cl1_vp1_init_bitplane_pointers
-	bsr	cl1_vp1_start_display
 	bsr	cl1_vp1_init_branch
+	bsr	cl1_vp1_start_display
 ; Vertical-Blank
 	bsr	cl1_vb_start_blank
 	bsr	cl1_vb_init_bpldat
@@ -1201,11 +1201,6 @@ cl1_vp1_init_bitplane_pointers_loop
 	dbf	d7,cl1_vp1_init_bitplane_pointers_loop
 	rts
 
-	CNOP 0,4
-cl1_vp1_start_display
-	COP_WAIT cl1_hstart1,cl1_vstart1-1
-	COP_MOVEQ vp1_bplcon0_bits1,BPLCON0
-	rts
 
 	CNOP 0,4
 cl1_vp1_init_branch
@@ -1217,6 +1212,13 @@ cl1_vp1_init_branch
 	swap	d0
 	move.w	#COP1LCL,(a0)+
 	move.w	d0,(a0)+
+	rts
+
+
+	CNOP 0,4
+cl1_vp1_start_display
+	COP_WAIT cl1_hstart1,cl1_vstart1
+	COP_MOVEQ vp1_bplcon0_bits1,BPLCON0
 	COP_MOVEQ 0,COPJMP2
 	rts
 
