@@ -42,6 +42,19 @@
 ; - Image blind scroll speed slowed down
 ; - Copperlist1 branch improved
 
+; V.1.8 beta
+; Again image blind scroll speed slowed down
+
+; V.1.9 beta
+; - Sprites movements slowed down
+
+; V.2.0 beta
+; - Bugfix: 8xx command routine used the register a0 which lead to a guru 0003
+; - Typewriter text changed
+; - Typewriter text restart
+; - Clear delay increased to 8 seconds
+; - Backspace delay increased to 3 frames
+
 
 ; 8xy command
 ; 810	scroll sprites bottom in
@@ -367,6 +380,11 @@ tw_text_cursor_depth		EQU extra_pf2_depth
 
 tw_delay			EQU 5	; frames
 
+; Clear-Text
+ct_delay			EQU 8*PAL_FPS ; 8s
+
+ct_backspace_delay		EQU 3	; frames
+
 ; Sine-Sprites
 ss_image_x_size			EQU 7
 ss_image_y_size			EQU 7
@@ -383,7 +401,7 @@ ss_x_angle_speed		EQU 2
 ss_x_distance			EQU 14
 ss_y_center			EQU display_window_vstart+((visible_lines_number-ss_image_y_size)/2)
 ss_y_radius			EQU (visible_lines_number-ss_image_y_size)/2
-ss_y_angle_speed		EQU 3 ; 9, 10
+ss_y_angle_speed		EQU 3	; 9, 10
 ss_y_distance			EQU 14
 
 ss_objects_per_sprite_number	EQU ss_reused_sprites_number/ss_used_sprites_number
@@ -403,7 +421,7 @@ ibs_lamella_center		EQU ((ibs_lamella_height_max-ibs_lamella_height_min)/2)+ibs_
 ibs_lamella_angle_speed		EQU 4
 ibs_lamella_angle_step		EQU 4
 ibs_step1			EQU 1
-ibs_step2			EQU 4
+ibs_step2			EQU 5
 ibs_speed			EQU 1
 
 ; Logo-Fader
@@ -863,12 +881,17 @@ tw_image			RS.L 1
 tw_text_table_start		RS.W 1
 tw_text_char_x_position		RS.W 1
 tw_text_char_y_position		RS.W 1
+tw_delay_counter		RS.W 1
 
 tw_cursor_active		RS.W 1
 tw_cursor_x_position		RS.W 1
 tw_cursor_y_position		RS.W 1
 
-tw_delay_counter		RS.W 1
+; Clear-Text
+ct_delay_counter		RS.W 1
+
+ct_backspace_active		RS.W 1
+ct_backspace_delay_counter	RS.W 1
 
 ; Sine-Sprites
 ss_sprites_visible		RS.W 1
@@ -944,12 +967,15 @@ init_main_variables
 	move.w	d0,tw_text_table_start(a3)
 	move.w	d0,tw_text_char_x_position(a3)
 	move.w	d0,tw_text_char_y_position(a3)
+	move.w	d1,tw_delay_counter(a3) ; disable counter
 
 	move.w	d1,tw_cursor_active(a3)
 	move.w	d0,tw_cursor_x_position(a3)
 	move.w	d0,tw_cursor_y_position(a3)
 
-	move.w	d1,tw_delay_counter(a3)	; disable counter
+; Clear-Text
+	move.w	d1,ct_delay_counter(a3) ; disable counter
+	move.w	d1,ct_backspace_delay_counter(a3)
 
 ; Sine-Sprites
 	move.w	d1,ss_sprites_visible(a3)
@@ -1410,6 +1436,7 @@ beam_routines
 	bsr	lf_rgb4_copy_color_table
 	bsr	tf_rgb4_copy_color_table
 	bsr	textwriter
+	bsr	clear_text
 	bsr	tw_display_cursor
 	bsr	cl1_update_bpl1dat
 	bsr	ss_calculate_xy_coordinates
@@ -1481,7 +1508,7 @@ textwriter_quit
 	rts
 
 
-	GET_NEW_CHAR_IMAGE.W tw,tw_check_control_codes,NORESTART
+	GET_NEW_CHAR_IMAGE.W tw,tw_check_control_codes
 
 ; Input
 ; d0.b	ASCII-Code
@@ -1512,6 +1539,7 @@ tw_stop_textwriter
 	moveq	#FALSE,d0
 	move.w	d0,tw_delay_counter(a3)	; disable counter
 	move.w	d0,tw_cursor_active(a3)
+ 	move.w	#ct_delay,ct_delay_counter(a3) ; start delay counter
 	moveq	#RETURN_OK,d0
 	rts
 
@@ -1562,7 +1590,7 @@ tw_clear_cursor_data
 	WAITBLIT
 	move.l	#BC0F_DEST<<16,BLTCON0-DMACONR(a6) ; minterm clear
 	move.l	a1,BLTDPT-DMACONR(a6)
-	move.w	#extra_pf2_plane_width-tw_text_char_width,BLTDMOD-DMACONR(a6)
+	move.w	#extra_pf2_plane_width-tw_text_cursor_width,BLTDMOD-DMACONR(a6)
 	move.w	#((tw_text_cursor_y_size*tw_text_cursor_depth)<<6)|(tw_text_cursor_x_size/WORD_BITS),BLTSIZE-DMACONR(a6)
 	rts
 
@@ -1579,6 +1607,13 @@ tw_display_cursor
 	move.w	tw_cursor_y_position(a3),d1
 	MULUF.W extra_pf2_plane_width*extra_pf2_depth,d1,d2 ; y offset in playfield
 	add.w	d1,d0			; x offset + y offset
+ 	bne.s	tw_display_cursor_skip
+ 	moveq	#FALSE,d1
+	move.w	d1,ct_backspace_active(a3)
+	move.w	d1,ct_backspace_delay_counter(a3)
+	move.w	#1,tw_delay_counter(a3)	; enable counter
+	clr.w	tw_active(a3)
+tw_display_cursor_skip
 	move.l	extra_pf2(a3),a1
 	add.l	d0,a1			; add playfield address
 	WAITBLIT
@@ -1590,6 +1625,44 @@ tw_display_cursor
 	move.w	#extra_pf2_plane_width-tw_text_cursor_width,BLTDMOD-DMACONR(a6)
 	move.w	#((tw_text_cursor_y_size*tw_text_cursor_depth)<<6)|(tw_text_cursor_x_size/WORD_BITS),BLTSIZE-DMACONR(a6)
 tw_display_cursor_quit
+	rts
+
+
+; Input
+; Result
+	CNOP 0,4
+clear_text
+	move.l	a4,-(a7)
+	tst.w	ct_backspace_active(a3)
+	bne.s	clear_text_quit
+	moveq	#0,d0
+	move.w	tw_text_char_x_position(a3),d0
+	move.w	d0,d3			; store x
+	lsr.w	#3,d0			; byte offset
+	move.w	tw_text_char_y_position(a3),d1
+	move.w	d1,d4			; store y
+	MULUF.W extra_pf2_plane_width*extra_pf2_depth,d1,d2 ; y offset in playfield
+	add.w	d1,d0			; x offset + y offset
+	move.l	extra_pf2(a3),a1
+	add.l	d0,a1			; add playfield address
+	bsr	tw_clear_cursor_data
+	move.w	#extra_pf2_plane_width,a2
+	move.w	#tw_image_plane_width,a4
+	SUBF.W	tw_text_char_x_size,d3	; previous text column
+	bpl.s	clear_text_skip2
+	SUBF.W	tw_text_char_y_size+1,d4 ; previous text line
+	bpl.s	clear_text_skip1
+	moveq	#0,d4
+clear_text_skip1
+	move.w	#visible_pixels_number-tw_text_char_x_size,d3 ; reset x in text line
+clear_text_skip2
+	move.w	d3,tw_text_char_x_position(a3)
+	move.w	d4,tw_text_char_y_position(a3)
+	move.w	d3,tw_cursor_x_position(a3)
+	move.w	d4,tw_cursor_y_position(a3)
+	move.w	#FALSE,ct_backspace_active(a3)
+clear_text_quit
+	move.l	(a7)+,a4
 	rts
 
 
@@ -2064,6 +2137,26 @@ control_counters
 control_counters_skip1
 	move.w	d0,tw_delay_counter(a3)
 control_counters_skip2
+
+	move.w	ct_delay_counter(a3),d0
+	bmi.s	control_counters_skip4
+	subq.w	#1,d0
+	bne.s	control_counters_skip3
+	move.w	#ct_backspace_delay,ct_backspace_delay_counter(a3)
+	clr.w	tw_cursor_active(a3)
+control_counters_skip3
+	move.w	d0,ct_delay_counter(a3)
+control_counters_skip4
+
+	move.w	ct_backspace_delay_counter(a3),d0
+	bmi.s	control_counters_skip6
+	subq.w	#1,d0
+	bne.s	control_counters_skip5
+	MOVEF.W	ct_backspace_delay,d0	; reset counter
+	clr.w	ct_backspace_active(a3)
+control_counters_skip5
+	move.w	d0,ct_backspace_delay_counter(a3)
+control_counters_skip6
 	rts
 
 
@@ -2127,9 +2220,9 @@ pt_scroll_sprites_bottom_out
 pt_select_sprite_movement
 	moveq	#NIBBLE_MASK_LOW,d0
 	and.b	n_cmdlo(a2),d0
-	MULUF.W	WORD_SIZE,d0,d2
-	lea	ss_movements(pc),a0
-	move.w	(a0,d0.w),ss_variable_y_speed(a3)
+	MULUF.W	WORD_SIZE,d0,d7
+	lea	ss_movements(pc),a1
+	move.w	(a1,d0.w),ss_variable_y_speed(a3)
 	rts
 
 	CNOP 0,4
@@ -2304,6 +2397,17 @@ tw_chars_offsets
 	DS.W tw_ascii_end-tw_ascii
 
 
+; Clear-Text
+ct_ascii
+	DC.B "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.!?-'():\/&<>#*°¹²³³@+ "
+ct_ascii_end
+	EVEN
+
+	CNOP 0,2
+ct_chars_offsets
+	DS.W ct_ascii_end-tw_ascii
+
+
 ; Sine-Sprites
 	CNOP 0,2
 ss_xy_starts
@@ -2315,10 +2419,10 @@ ss_xy_coordinates
 
 	CNOP 0,2
 ss_movements
-	DC.W 3*WORD_SIZE
-	DC.W 9*WORD_SIZE
-	DC.W 12*WORD_SIZE
-	DC.W 15*WORD_SIZE
+	DC.W 1*WORD_SIZE
+	DC.W 4*WORD_SIZE
+	DC.W 6*WORD_SIZE
+	DC.W 7*WORD_SIZE
 
 
 ; Logo-Fader-In
@@ -2354,7 +2458,7 @@ tfo_rgb4_color_table
 
 	DC.B "$VER: "
 	DC.B "Lowres4Intro "
-	DC.B "1.7 beta "
+	DC.B "1.9 beta "
 	DC.B "(3.1.26) "
 	DC.B "© 2026 by Resistance",0
 	EVEN
@@ -2362,19 +2466,43 @@ tfo_rgb4_color_table
 
 ; Textwriter
 tw_text
-	DC.B ASCII_CTRL_M
-	DC.B "WELCOME TO"
-	DC.B ASCII_CTRL_M
-	DC.B ASCII_CTRL_M
-	DC.B "LOWRES PARTY VOLUME 4"
-	DC.B ASCII_CTRL_M
-	DC.B ASCII_CTRL_M
-	DC.B ASCII_CTRL_M
-	DC.B ASCII_CTRL_M
-	DC.B ASCII_CTRL_M
-	DC.B "SEE YOU..."
+; Page 1
+	DC.B ASCII_CTRL_M," "
+	DC.B ASCII_CTRL_M," "
+	DC.B ASCII_CTRL_M," "
+	DC.B "WELCOME - AND ENJOY"
+	DC.B ASCII_CTRL_M," "
+	DC.B ASCII_CTRL_M," "
+	DC.B "THE LOW RESOLUTION."
 	DC.B ASCII_CTRL_S," "
-tw_text_end
+
+; Page 2
+	DC.B ASCII_CTRL_M," "
+	DC.B ASCII_CTRL_M," "
+	DC.B ASCII_CTRL_M," "
+	DC.B "INSERT DISK."
+	DC.B ASCII_CTRL_M," "
+	DC.B ASCII_CTRL_M," "
+	DC.B "FLIP THE SWITCH."
+	DC.B ASCII_CTRL_M," "
+	DC.B ASCII_CTRL_M," "
+	DC.B "WAIT FOR THE MAGIC."
+	DC.B ASCII_CTRL_S," "
+
+; Page 3
+	DC.B ASCII_CTRL_M," "
+	DC.B ASCII_CTRL_M," "
+	DC.B ASCII_CTRL_M," "
+	DC.B "RETRO COMPUTERS."
+	DC.B ASCII_CTRL_M," "
+	DC.B ASCII_CTRL_M," "
+	DC.B "REAL HARDWARE."
+	DC.B ASCII_CTRL_M," "
+	DC.B ASCII_CTRL_M," "
+	DC.B "PURE CREATIVITY."
+	DC.B ASCII_CTRL_S," "
+
+	DC.B FALSE
 	EVEN
 
 
