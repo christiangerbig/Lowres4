@@ -2577,7 +2577,7 @@ ss_movements
 ; Logo-Fader-In
 	CNOP 0,2
 lfi_rgb4_color_table
-	INCLUDE "Lowres4:colortables/352x70x16-Lowres4.ct"
+	INCLUDE "Lowres4:colortables/352x70x16-Title.ct"
 
 
 ; Logo-Fader-Out
@@ -2691,7 +2691,7 @@ pt_auddata			SECTION pt_audio,DATA_C
 
 ; Logo
 lg_image_data			SECTION lg_gfx,DATA
-	INCBIN "Lowres4:graphics/352x70x16-Lowres4.rawblit"
+	INCBIN "Lowres4:graphics/352x70x16-Title.rawblit"
 
 ; Textwriter
 tw_image_data			SECTION tw_gfx,DATA
