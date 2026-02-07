@@ -521,7 +521,7 @@ vp2_pf1_bpl1dat_x_offset	EQU 0
 
 	RSRESET
 
-cl1_ext5nsion1			RS.B 0
+cl1_extension1			RS.B 0
 
 cl1_ext1_DDFSTRT		RS.L 1
 cl1_ext1_DDFSTOP		RS.L 1
@@ -2625,8 +2625,8 @@ tfo_rgb4_color_table
 
 	DC.B "$VER: "
 	DC.B "Lowres4Intro "
-	DC.B "2.2 beta "
-	DC.B "(18.1.26) "
+	DC.B "1.0 "
+	DC.B "(7.2.26) "
 	DC.B "© 2026 by Resistance",0
 	EVEN
 
