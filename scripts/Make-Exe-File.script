@@ -1,3 +1,3 @@
 CD Lowres4:sources
-OMA Lowres4.asm -o projects-exe-files:Lowres4Intro -c c -m >RAM:make-output.txt
+OMA Lowres4.asm -o Lowres4:executables/Lowres4Intro -c c -m >RAM:make-output.txt
 CD /

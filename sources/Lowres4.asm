@@ -4,6 +4,9 @@
 ; 1.2+
 
 
+; Code optimized for O.M.A. 2.0 Assembler
+
+
 ; V.1.0 beta
 ; - 1st release
 
@@ -1101,8 +1104,8 @@ init_main
 	bsr	tw_init_chars_offsets
 	bsr	ss_init_xy_starts
 	bsr	init_sprites
-	bsr	init_first_copperlist
-	bsr	init_second_copperlist
+	bsr	cl1_init_copperlist
+	bsr	cl2_init_copperlist
 	rts
 
 
@@ -1228,7 +1231,7 @@ ss_init_sprites_bitmaps_loop3
 
 
 	CNOP 0,4
-init_first_copperlist
+cl1_init_copperlist
 	move.l	cl1_display(a3),a0
 ; View
 	bsr.s	cl1_init_playfield_props
@@ -1445,7 +1448,7 @@ cl1_vp2_set_bitplane_pointers_loop
 
 
 	CNOP 0,4
-init_second_copperlist
+cl2_init_copperlist
 	move.l	cl2_construction2(a3),a0 
 	bsr.s	cl2_init_bpl_registers
 	COP_MOVEQ 0,COPJMP1
@@ -2416,16 +2419,16 @@ vp1_pf1_rgb4_color_table
 
 	CNOP 0,2
 vp2_pf1_rgb4_color_table
-	INCLUDE "Lowres4:colortables/16x15x4-Font.ct"
+	INCLUDE "Lowres4:colorpalettes/16x15x4-Font.ct"
 	DC.W color00_bits,color00_bits,color00_bits
 	DC.W $59b			; cursor color
 
 	CNOP 0,2
 spr_rgb4_color_table
-	INCLUDE "Lowres4:colortables/7x7x4-Heart.ct"
-	INCLUDE "Lowres4:colortables/7x7x4-Heart.ct"
-	INCLUDE "Lowres4:colortables/7x7x4-Heart.ct"
-	INCLUDE "Lowres4:colortables/7x7x4-Heart.ct"
+	INCLUDE "Lowres4:colorpalettes/7x7x4-Heart.ct"
+	INCLUDE "Lowres4:colorpalettes/7x7x4-Heart.ct"
+	INCLUDE "Lowres4:colorpalettes/7x7x4-Heart.ct"
+	INCLUDE "Lowres4:colorpalettes/7x7x4-Heart.ct"
 
 
 	CNOP 0,4
@@ -2577,7 +2580,7 @@ ss_movements
 ; Logo-Fader-In
 	CNOP 0,2
 lfi_rgb4_color_table
-	INCLUDE "Lowres4:colortables/352x70x16-Title.ct"
+	INCLUDE "Lowres4:colorpalettes/352x70x16-Title.ct"
 
 
 ; Logo-Fader-Out
@@ -2591,7 +2594,7 @@ lfo_rgb4_color_table
 ; Bar-Fader 
 	CNOP 0,2
 bfi_rgb4_color_table
-	INCLUDE "Lowres4:colortables/6-Colorgradient.ct"
+	INCLUDE "Lowres4:colorpalettes/6-Colorgradient.ct"
 
 	CNOP 0,2
 bfo_rgb4_color_table
