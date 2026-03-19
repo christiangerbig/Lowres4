@@ -1513,7 +1513,7 @@ beam_routines
 	bsr	clear_text
 	bsr	tw_display_cursor
 	bsr	cl1_update_bpl1dat
-	bsr	ss_calculate_xy_coordinates
+	bsr	ss_calc_xy_coordinates
 	movem.l a4-a6,-(a7)
 	bsr	ss_sort_y_coordinates
 	movem.l (a7)+,a4-a6
@@ -1763,7 +1763,7 @@ cl1_update_bpl1dat
 
 
 	CNOP 0,4
-ss_calculate_xy_coordinates
+ss_calc_xy_coordinates
 	movem.l a3-a6,-(a7)
 	MOVEF.W	ss_x_radius*2*2,d1
 	MOVEF.W	ss_y_radius*2,d2
