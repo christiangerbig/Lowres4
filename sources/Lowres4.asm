@@ -1199,9 +1199,7 @@ init_sprites
 	bsr	spr_copy_structures
 	rts
 
-
 	INIT_SPRITE_POINTERS_TABLE
-
 
 	CNOP 0,4
 ss_init_sprites_bitmaps
@@ -1210,20 +1208,19 @@ ss_init_sprites_bitmaps
 	lea	ss_image_data,a4
 	moveq	#ss_used_sprites_number-1,d7
 ss_init_sprites_bitmaps_loop1
-	move.l	(a2)+,a0		; 1st sprite structure
+	move.l	(a2)+,a0		; sprite structure
 	moveq	#ss_objects_per_sprite_number-1,d6
 ss_init_sprites_bitmaps_loop2
 	addq.w	#LONGWORD_SIZE,a0 	; skip header
 	move.l	a4,a1			; image data
 	moveq	#ss_image_y_size-1,d5
 ss_init_sprites_bitmaps_loop3
-	move.l	(a1)+,(a0)+		; copy 1 word plane1 & plane2
+	move.l	(a1)+,(a0)+		; copy 1 word plane 1 & 2
 	dbf	d5,ss_init_sprites_bitmaps_loop3
 	dbf	d6,ss_init_sprites_bitmaps_loop2
 	dbf	d7,ss_init_sprites_bitmaps_loop1
 	movem.l (a7)+,a4-a6
 	rts
-
 
 	COPY_SPRITE_STRUCTURES
 
@@ -1270,7 +1267,6 @@ cl1_init_colors
 	COP_INIT_COLOR COLOR16,16,spr_rgb4_color_table
 	rts
 
-
 	COP_SET_SPRITE_POINTERS cl1,display,spr_number
 
 
@@ -1293,7 +1289,6 @@ cl1_vp1_init_plane_pointers_loop
 	dbf	d7,cl1_vp1_init_plane_pointers_loop
 	rts
 
-
 	CNOP 0,4
 cl1_vp1_init_branch
 	move.l	cl1_display(a3),d0
@@ -1305,7 +1300,6 @@ cl1_vp1_init_branch
 	move.w	#COP1LCL,(a0)+
 	move.w	d0,(a0)+
 	rts
-
 
 	CNOP 0,4
 cl1_vp1_start_display
@@ -1459,7 +1453,6 @@ cl2_init_copperlist
 	bsr	image_blind_scroll
 	rts
 
-
 	CNOP 0,4
 cl2_init_bpl_registers
 	move.l	#(((cl2_vstart1<<24)|(((cl2_hstart1/4)*2)<<16))|$10000)|$fffe,d0 ; CWAIT
@@ -1482,7 +1475,6 @@ cl2_init_bpl_registers_loop
 	COP_MOVEQ 0,BPL1DAT
 	dbf	d7,cl2_init_bpl_registers_loop
 	rts
-
 
 	COPY_COPPERLIST cl2,2
 
@@ -1582,7 +1574,6 @@ textwriter_skip
 textwriter_quit
 	movem.l	(a7)+,a4-a5
 	rts
-
 
 	GET_NEW_CHAR_IMAGE.W tw,tw_check_control_codes
 
@@ -1769,8 +1760,8 @@ ss_calc_xy_coordinates
 	MOVEF.W	ss_y_radius*2,d2
 	move.w	ss_x_radius_angle(a3),d3
 	move.w	d3,d0		
-	MOVEF.W (sine_table_length-1)*WORD_SIZE,d6 ; overflow 360°
 	addq.w	#ss_x_radius_angle_speed*WORD_SIZE,d0
+	MOVEF.W (sine_table_length-1)*WORD_SIZE,d6 ; overflow 360°
 	and.w	d6,d0			; remove overflow
 	move.w	d0,ss_x_radius_angle(a3) 
 	move.w	ss_x_angle(a3),d4
@@ -1792,19 +1783,19 @@ ss_calc_xy_coordinates
 	move.w	#ss_y_distance*WORD_SIZE,a6
 	REPT ss_reused_sprites_number
 	move.w	(a0,d3.w),d0		; cos(w)
-	add.w	a5,d3			; next x radius angle
-	muls.w	d1,d0			; xr'=(xr*cos(w))/2^15
+	add.w	a5,d3			; next x angle
+	muls.w	d1,d0			; xr' = (xr*cos(w))/2^15
 	swap	d0
 	and.w	d6,d3			; remove overflow
-	muls.w	(a0,d4.w),d0		; x'=(xr'*cos(w))/2^15
+	muls.w	(a0,d4.w),d0		; x' = (xr'*cos(w))/2^15
 	swap	d0
 	add.w	a3,d4			; next x angle
 	add.w	a2,d0			; x' + x center
 	move.w	d0,(a1)+		; x position
 	and.w	d6,d4			; remove overflow
 	move.w	(a0,d5.w),d0
-	muls.w	d2,d0			; y'=(yr*sin(w))/2^15
-	add.w	a6,d5			; next y angle
+	muls.w	d2,d0			; y' = (yr*sin(w))/2^15
+	add.w	a6,d5			; next angle
 	swap	d0
 	and.w	d6,d5			; remove overflow
 	add.w	a4,d0			; y' + y center
@@ -1824,10 +1815,10 @@ ss_sort_y_coordinates
 	lea	ss_xy_coordinates(pc),a6
 ss_quicks
 	move.l	a5,d0			; pointer last entry
-	add.l	a0,d0			; pointer first entry + last entry
+	add.l	a0,d0			; pointer 1st entry + pointer last entry
 	lsr.l	#1,d0			; middle of table
-	and.b	d2,d0			; only even
-	move.l	d0,a4			; store middle of table
+	and.b	d2,d0			; only even pointers
+	move.l	d0,a4			; store pointer
 	move.w	(a4),d1			; xy start
 	move.w	WORD_SIZE(a6,d1.w),d0	; y
 ss_quick
@@ -1841,24 +1832,24 @@ ss_quick2
 	cmp.w	WORD_SIZE(a6,d1.w),d0	; penultimate y > middle y ?
 	blt.s	ss_quick2
 ss_quick3
-	cmp.l	a2,a1			; pointer end of table > pointer table beginning ?
+	cmp.l	a2,a1			; pointer table > pointer table start ?
 	bgt.s	ss_quick4
-	move.w	(a2),d1			; last start
-	move.w	(a1),(a2)		; 1st start -> last start
-	subq.w	#WORD_SIZE,a2		; penultimate start
-	move.w	d1,(a1)+		; last start -> 1st start
+	move.w	(a2),d1			; last xy start
+	move.w	(a1),(a2)		; 1st xy start -> last xy start
+	subq.w	#WORD_SIZE,a2		; penultimate xy start
+	move.w	d1,(a1)+		; last xy start -> 1st xy start
 ss_quick4
-	cmp.l	a2,a1			; pointer beginning of table <= pointer end of table ?
+	cmp.l	a2,a1			; pointer table start <= pointer table end  ?
 	ble.s	ss_quick
-	cmp.l	a2,a0			; pointer beginning of table >= pointer end of table ?
+	cmp.l	a2,a0			; pointer table start >= pointer table end ?
 	bge.s	ss_quick5
 	move.l	a5,-(a7)
-	move.l	a2,a5			; store pointer end of table
+	move.l	a2,a5			; store pointer table end
 	move.l	a0,a1
 	bsr.s	ss_quicks
 	move.l	(a7)+,a5
 ss_quick5
-	cmp.l	a5,a1			; pointer beginning of table >= pointer end of table ?
+	cmp.l	a5,a1			; pointer table start >= pointer table end?
 	bge.s	ss_quick6
 	move.l	a0,-(a7)
 	move.l	a1,a0
@@ -1882,7 +1873,7 @@ ss_move_sprites_loop
 	move.l	a2,a1			; pointer sprite structures
 
 	move.l	(a1)+,a0		; pointer sprite structure
-	add.l	a3,a0			; + offset current sprite
+	add.l	a3,a0			; add offset current sprite
 	move.w	(a5)+,d0		; xy start
 	moveq	#ss_image_y_size,d2
 	move.w	WORD_SIZE(a6,d0.w),d1	; y
@@ -1892,7 +1883,7 @@ ss_move_sprites_loop
 	move.w	d1,(a0)+		; SPRxPOS
 	move.w	d2,(a0)			; SPRxCTL
 	move.l	(a1)+,a0		; pointer sprite structure
-	add.l	a3,a0			; + offset current sprite
+	add.l	a3,a0			; add offset current sprite
 	move.w	(a5)+,d0		; xy start
 	moveq	#ss_image_y_size,d2
 	move.w	WORD_SIZE(a6,d0.w),d1	; y
@@ -1902,7 +1893,7 @@ ss_move_sprites_loop
 	move.w	d1,(a0)+		; SPRxPOS
 	move.w	d2,(a0)			; SPRxCTL
 	move.l	(a1)+,a0		; pointer sprite structure
-	add.l	a3,a0			; + offset current sprite
+	add.l	a3,a0			; add offset current sprite
 	move.w	(a5)+,d0		; xy start
 	moveq	#ss_image_y_size,d2
 	move.w	WORD_SIZE(a6,d0.w),d1	; y
@@ -1912,7 +1903,7 @@ ss_move_sprites_loop
 	move.w	d1,(a0)+		; SPRxPOS
 	move.w	d2,(a0)			; SPRxCTL
 	move.l	(a1)+,a0		; pointer sprite structure
-	add.l	a3,a0			; + offset current sprite
+	add.l	a3,a0			; add offset current sprite
 	move.w	(a5)+,d0		; xy start
 	moveq	#ss_image_y_size,d2
 	move.w	WORD_SIZE(a6,d0.w),d1	; y
@@ -1922,7 +1913,7 @@ ss_move_sprites_loop
 	move.w	d1,(a0)+		; SPRxPOS
 	move.w	d2,(a0)			; SPRxCTL
 	move.l	(a1)+,a0		; pointer sprite structure
-	add.l	a3,a0			; + offset current sprite
+	add.l	a3,a0			; add offset current sprite
 	move.w	(a5)+,d0		; xy start
 	moveq	#ss_image_y_size,d2
 	move.w	WORD_SIZE(a6,d0.w),d1	; y
@@ -1932,7 +1923,7 @@ ss_move_sprites_loop
 	move.w	d1,(a0)+		; SPRxPOS
 	move.w	d2,(a0)			; SPRxCTL
 	move.l	(a1)+,a0		; pointer sprite structure
-	add.l	a3,a0			; + offset current sprite
+	add.l	a3,a0			; add offset current sprite
 	move.w	(a5)+,d0		; xy start
 	moveq	#ss_image_y_size,d2
 	move.w	WORD_SIZE(a6,d0.w),d1	; y
@@ -1942,7 +1933,7 @@ ss_move_sprites_loop
 	move.w	d1,(a0)+		; SPRxPOS
 	move.w	d2,(a0)			; SPRxCTL
 	move.l	(a1)+,a0		; pointer sprite structure
-	add.l	a3,a0			; + offset current sprite
+	add.l	a3,a0			; add offset current sprite
 	move.w	(a5)+,d0		; xy start
 	moveq	#ss_image_y_size,d2
 	move.w	WORD_SIZE(a6,d0.w),d1	; y
@@ -1952,7 +1943,7 @@ ss_move_sprites_loop
 	move.w	d1,(a0)+		; SPRxPOS
 	move.w	d2,(a0)			; SPRxCTL
 	move.l	(a1)+,a0		; pointer sprite structure
-	add.l	a3,a0			; + offset current sprite
+	add.l	a3,a0			; add offset current sprite
 	move.w	(a5)+,d0		; xy start
 	moveq	#ss_image_y_size,d2
 	move.w	WORD_SIZE(a6,d0.w),d1	; y
