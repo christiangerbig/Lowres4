@@ -1,7 +1,8 @@
 ; Requirements
 ; 68000+
+; 1 MB chip memory
 ; OCS PAL+
-; 1.2+
+; 1.3+
 
 
 ; Code optimized for O.M.A. 2.0 Assembler
