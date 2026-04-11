@@ -431,7 +431,7 @@ ss_x_radius_angle_step		EQU 10
 ss_x_radius_angle_speed		EQU 1
 ss_x_angle_speed		EQU 2
 ss_x_distance			EQU 14
-ss_y_center			EQU display_window_vstart+((visible_lines_number-ss_image_y_size)/2)
+ss_y_center1			EQU display_window_vstart+((visible_lines_number-ss_image_y_size)/2)
 ss_y_radius			EQU (visible_lines_number-ss_image_y_size)/2
 ss_y_angle_speed		EQU 3
 ss_y_distance			EQU 14
@@ -938,11 +938,11 @@ ct_backspace_delay_counter	RS.W 1
 
 ; Sine-Sprites
 ss_sprites_visible		RS.W 1
-ss_variable_y_center		RS.W 1
+ss_y_center			RS.W 1
 ss_x_radius_angle		RS.W 1
 ss_x_angle			RS.W 1
 ss_y_angle			RS.W 1
-ss_variable_y_speed		RS.W 1
+ss_y_speed			RS.W 1
 
 ; Image-Blind-Scroll
 ibs_image_start			RS.W 1
@@ -1035,11 +1035,11 @@ init_main_variables
 
 ; Sine-Sprites
 	move.w	d1,ss_sprites_visible(a3)
-	move.w	#ss_y_center+ssb_y_radius,ss_variable_y_center(a3)
+	move.w	#ss_y_center1+ssb_y_radius,ss_y_center(a3)
 	move.w	#(sine_table_length/4)*WORD_SIZE,ss_x_radius_angle(a3) ; 90°
 	move.w	#(sine_table_length/4)*WORD_SIZE,ss_x_angle(a3) ; 90°
 	move.w	d0,ss_y_angle(a3)	; 0°
-	move.w	d0,ss_variable_y_speed(a3)
+	move.w	d0,ss_y_speed(a3)
 
 ; Image-Blind-Scroll
 	move.w	d0,ibs_image_start(a3)
@@ -1772,13 +1772,13 @@ ss_calc_xy_coordinates
 	move.w	d0,ss_x_angle(a3)	
 	move.w	ss_y_angle(a3),d5
 	move.w	d5,d0
-	add.w	ss_variable_y_speed(a3),d0
+	add.w	ss_y_speed(a3),d0
 	and.w	d6,d0			; remove overflow
 	move.w	d0,ss_y_angle(a3)	
 	lea	sine_table(pc),a0
 	lea	ss_xy_coordinates(pc),a1
 	move.w	#ss_x_center,a2
-	move.w	ss_variable_y_center(a3),a4
+	move.w	ss_y_center(a3),a4
 	move.w	#ss_x_distance*WORD_SIZE,a3
 	move.w	#ss_x_radius_angle_step*WORD_SIZE,a5
 	move.w	#ss_y_distance*WORD_SIZE,a6
@@ -2196,11 +2196,11 @@ scroll_sprites_bottom_in
 scroll_sprites_bottom_in_skip
 	lea	sine_table(pc),a0
 	move.w	(a0,d2.w),d0		; sin(w)
-	MULSF.W	ssb_y_radius*2,d0,d1	; y'=yr*cos(w)/2^16
+	MULSF.W	ssb_y_radius*2,d0,d1	; y' = yr*cos(w)/2^16
 	swap	d0
 	add.w	#ssb_y_center,d0
-	add.w	#ss_y_center,d0		; vertical centering
-	move.w	d0,ss_variable_y_center(a3)
+	add.w	#ss_y_center1,d0	; vertical centering
+	move.w	d0,ss_y_center(a3)
 	addq.w	#ssbi_y_angle_speed*WORD_SIZE,d2
 	move.w	d2,ssbi_y_angle(a3)
 scroll_sprites_bottom_in_quit
@@ -2224,11 +2224,11 @@ scroll_sprites_bottom_out
 scroll_sprites_bottom_out_skip
 	lea	sine_table(pc),a0
 	move.w	(a0,d2.w),d0		; sin(w)
-	MULSF.W	ssb_y_radius*2,d0,d1	; y'=yr*cos(w)/2^16
+	MULSF.W	ssb_y_radius*2,d0,d1	; y' = yr*cos(w)/2^16
 	swap	d0
 	add.w	#ssb_y_center,d0
-	add.w	#ss_y_center,d0		; vertical centering
-	move.w	d0,ss_variable_y_center(a3)
+	add.w	#ss_y_center1,d0	; vertical centering
+	move.w	d0,ss_y_center(a3)
 	addq.w	#ssbi_y_angle_speed*WORD_SIZE,d2
 	move.w	d2,ssbo_y_angle(a3)
 scroll_sprites_bottom_out_quit
@@ -2382,7 +2382,7 @@ pt_select_sprite_movement
 	and.b	n_cmdlo(a2),d0
 	MULUF.W	WORD_SIZE,d0,d7
 	lea	ss_movements(pc),a0
-	move.w	(a0,d0.w),ss_variable_y_speed(a3)
+	move.w	(a0,d0.w),ss_y_speed(a3)
 	move.l	(a7)+,a0
 	bra.s	pt_effects_handler_quit
 
