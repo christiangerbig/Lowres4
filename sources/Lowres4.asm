@@ -1161,6 +1161,7 @@ lg_copy_image_to_playfield
 ; a1.l	Source: image
 ; a4.l	Destination: bitplane
 ; Result
+; no return value
 	CNOP 0,4
 lg_copy_image_data
 	move.l	a1,a0			; source
@@ -1540,6 +1541,7 @@ beam_routines
 
 ; Input
 ; Result
+; no return value
 	CNOP 0,4
 textwriter
 	movem.l	a4-a5,-(a7)
@@ -1614,11 +1616,12 @@ tw_stop_textwriter
 
 
 ; Input
-; a0.l	character image
-; a1.l	bitplane 1
+; a0.l	Character image
+; a1.l	Bitplane 1
 ; a2.l	Plane width
-; a4.l	Plane width character image
+; a4.l	Plane width of character image
 ; Result
+; no return value
 	CNOP 0,4
 tw_copy_character_data
 	move.l	a2,a5
@@ -1637,6 +1640,7 @@ tw_copy_character_data
 
 ; Input
 ; Result
+; no return value
 	CNOP 0,4
 tw_clear_cursor
 	moveq	#0,d0
@@ -1652,8 +1656,9 @@ tw_clear_cursor
 
 
 ; Input
-; a1.l	 bitplane 1
+; a1.l	Bitplane 1
 ; Result
+; no return value
 	CNOP 0,4
 tw_clear_cursor_data
 	WAITBLIT
@@ -1666,6 +1671,7 @@ tw_clear_cursor_data
 
 ; Input
 ; Result
+; no return value
 	CNOP 0,4
 tw_display_cursor
 	tst.w	tw_cursor_active(a3)
@@ -1699,6 +1705,7 @@ tw_display_cursor_quit
 
 ; Input
 ; Result
+; no return value
 	CNOP 0,4
 clear_text
 	move.l	a4,-(a7)
@@ -2282,6 +2289,7 @@ mouse_handler_skip4
 
 ; Input
 ; Result
+; no return value
 	CNOP 0,4
 control_counters
 
