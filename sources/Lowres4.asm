@@ -523,6 +523,7 @@ vp2_pf1_bpl1dat_x_offset	EQU 0
 	INCLUDE "music-tracker/pt-temp-channel.i"
 
 
+; Viewport 1
 	RSRESET
 
 cl1_extension1			RS.B 0
@@ -566,6 +567,7 @@ cl1_ext1_COPJMP2		RS.L 1
 cl1_extension1_size		RS.B 0
 
 
+; Vertical Blank
 	RSRESET
 
 cl1_extension2			RS.B 0
@@ -588,6 +590,7 @@ cl1_ext3_BPL1DAT		RS.L 1
 cl1_extension3_size		RS.B 0
 
 
+; Viewport 2
 	RSRESET
 
 cl1_extension4			RS.B 0
@@ -1156,7 +1159,6 @@ lg_copy_image_to_playfield
 	move.l	(a7)+,a4
 	rts
 
-
 ; Input
 ; a1.l	Source: image
 ; a4.l	Destination: bitplane
@@ -1169,7 +1171,7 @@ lg_copy_image_data
 	MOVEF.W lg_image_y_size-1,d7
 lg_copy_image_data_loop
 	REPT lg_image_x_size/WORD_BITS
-	move.w	(a0)+,(a2)+		; copy 44 bytes
+	move.w	(a0)+,(a2)+		; copy bitplane data
 	ENDR
 	ADDF.W	lg_image_plane_width*(lg_image_depth-1),a0 ; next line in source
 	ADDF.W	extra_pf1_plane_width*(extra_pf1_depth-1),a2 ; next line in destination
@@ -1251,6 +1253,7 @@ cl1_init_copperlist
 	bsr	cl1_vp2_init_bpldat
 ; Copper-Interrupt
 	bsr	cl1_init_copper_interrupt
+
 	bsr	cl1_reset_copperlist_pointer
 	COP_LISTEND
 
@@ -1405,6 +1408,7 @@ cl1_reset_copperlist_pointer
 	rts
 
 
+; Viewport 1
 	CNOP 0,4
 cl1_vp1_set_plane_pointers
 	move.l	cl1_display(a3),a0
@@ -1423,6 +1427,7 @@ cl1_vp1_set_plane_pointers_loop
 	rts
 
 
+; Viewport 2
 	CNOP 0,4
 cl1_vp2_set_plane_pointers
 	move.l	cl1_display(a3),a0
@@ -2416,22 +2421,26 @@ nmi_interrupt_server
 	INCLUDE "sys-structures.i"
 
 
+; View
 	CNOP 0,2
 pf1_rgb4_color_table
 	DC.W color00_bits
 
+; Viewport 1
 	CNOP 0,2
 vp1_pf1_rgb4_color_table
 	REPT vp1_pf1_colors_number
 	DC.W color00_bits
 	ENDR
 
+; Viewport 2
 	CNOP 0,2
 vp2_pf1_rgb4_color_table
 	INCLUDE "Lowres4:colorpalettes/16x15x4-Font.ct"
 	DC.W color00_bits,color00_bits,color00_bits
 	DC.W $59b			; cursor color
 
+; Sprites
 	CNOP 0,2
 spr_rgb4_color_table
 	INCLUDE "Lowres4:colorpalettes/7x7x4-Heart.ct"
