@@ -927,6 +927,7 @@ tw_image			RS.L 1
 tw_text_table_start		RS.W 1
 tw_text_char_x_position		RS.W 1
 tw_text_char_y_position		RS.W 1
+
 tw_delay_counter		RS.W 1
 
 tw_cursor_active		RS.W 1
@@ -1025,6 +1026,7 @@ init_main_variables
 	move.w	d0,tw_text_table_start(a3)
 	move.w	d0,tw_text_char_x_position(a3)
 	move.w	d0,tw_text_char_y_position(a3)
+
 	move.w	d1,tw_delay_counter(a3) ; disable counter
 
 	move.w	d1,tw_cursor_active(a3)
@@ -1393,6 +1395,7 @@ cl1_vp2_init_bpldat_skip
 	rts
 
 
+; Copper Interrupt
 	COP_INIT_COPINT cl1,cl1_hstart7,cl1_vstart7
 
 
@@ -1735,7 +1738,7 @@ clear_text
 	bpl.s	clear_text_skip1
 	moveq	#0,d4
 clear_text_skip1
-	MOVEF.W	visible_pixels_number-tw_text_char_x_size,d3 ; reset x in text line
+	MOVEF.W	vp2_visible_pixels_number-tw_text_char_x_size,d3 ; reset x in text line
 clear_text_skip2
 	move.w	d3,tw_text_char_x_position(a3)
 	move.w	d4,tw_text_char_y_position(a3)
