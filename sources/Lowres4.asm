@@ -1544,7 +1544,7 @@ beam_routines
 	SWAP_SPRITES spr_swap_number
 
 
-	SET_SPRITES spr_swap_number
+	SET_SPRITES cl1,spr_swap_number
 
 
 ; Input
@@ -2355,9 +2355,11 @@ vertb_interrupt_server
 		rts
 
 		PT_FADE_OUT_VOLUME stop_fx_active
-
-		CNOP 0,4
+	ELSE
+		bsr.s	pt_PlayMusic
+		rts
 	ENDC
+
 
 	IFD PROTRACKER_VERSION_2 
 		PT2_REPLAY pt_effects_handler
