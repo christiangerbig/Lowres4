@@ -929,17 +929,17 @@ tw_text_table_start		RS.W 1
 tw_text_char_x_position		RS.W 1
 tw_text_char_y_position		RS.W 1
 
-tw_delay_counter		RS.W 1
+tw_counter		RS.W 1
 
 tw_cursor_active		RS.W 1
 tw_cursor_x_position		RS.W 1
 tw_cursor_y_position		RS.W 1
 
 ; Clear-Text
-ct_delay_counter		RS.W 1
+ct_counter		RS.W 1
 
 ct_backspace_active		RS.W 1
-ct_backspace_delay_counter	RS.W 1
+ct_backspace_counter	RS.W 1
 
 ; Sine-Sprites
 ss_sprites_visible		RS.W 1
@@ -959,11 +959,11 @@ lf_rgb4_copy_colors_active	RS.W 1
 
 ; Logo-Fader-In
 lfi_rgb4_active			RS.W 1
-lfi_delay_counter		RS.W 1
+lfi_counter		RS.W 1
 
 ; Logo-Fader-Out
 lfo_rgb4_active			RS.W 1
-lfo_delay_counter		RS.W 1
+lfo_counter		RS.W 1
 
 ; Bar-Fader 
 bf_rgb4_colors_counter		RS.W 1
@@ -971,11 +971,11 @@ bf_rgb4_copy_colors_active	RS.W 1
 
 ; Bar-Fader-In 
 bfi_rgb4_active			RS.W 1
-bfi_delay_counter		RS.W 1
+bfi_counter		RS.W 1
 
 ; Bar-Fader-Out 
 bfo_rgb4_active			RS.W 1
-bfo_delay_counter		RS.W 1
+bfo_counter		RS.W 1
 
 ; Textwriter-Fader
 tf_rgb4_colors_counter		RS.W 1
@@ -983,7 +983,7 @@ tf_rgb4_copy_colors_active	RS.W 1
 
 ; Textwriter-Fader-Out
 tfo_rgb4_active			RS.W 1
-tfo_delay_counter		RS.W 1
+tfo_counter		RS.W 1
 
 ; Scroll-Sprites-Bottom-In
 ssbi_active			RS.W 1
@@ -1028,16 +1028,16 @@ init_main_variables
 	move.w	d0,tw_text_char_x_position(a3)
 	move.w	d0,tw_text_char_y_position(a3)
 
-	move.w	d1,tw_delay_counter(a3) ; disable counter
+	move.w	d1,tw_counter(a3) ; disable counter
 
 	move.w	d1,tw_cursor_active(a3)
 	move.w	d0,tw_cursor_x_position(a3)
 	move.w	d0,tw_cursor_y_position(a3)
 
 ; Clear-Text
-	move.w	d1,ct_delay_counter(a3) ; disable counter
+	move.w	d1,ct_counter(a3) ; disable counter
 
-	move.w	d1,ct_backspace_delay_counter(a3)
+	move.w	d1,ct_backspace_counter(a3)
 
 ; Sine-Sprites
 	move.w	d1,ss_sprites_visible(a3)
@@ -1057,11 +1057,11 @@ init_main_variables
 
 ; Logo-Fader-In
 	move.w	d0,lfi_rgb4_active(a3)
-	move.w	#lfi_delay,lfi_delay_counter(a3)
+	move.w	#lfi_delay,lfi_counter(a3)
 
 ; Logo-Fader-Out
 	move.w	d1,lfo_rgb4_active(a3)
-	move.w	#lfo_delay,lfo_delay_counter(a3)
+	move.w	#lfo_delay,lfo_counter(a3)
 
 ; Bar-Fader 
 	move.w	#bf_rgb4_colors_number*3,bf_rgb4_colors_counter(a3)
@@ -1069,11 +1069,11 @@ init_main_variables
 
 ; Bar-Fader-In 
 	move.w	d0,bfi_rgb4_active(a3)
-	move.w	#bfi_delay,bfi_delay_counter(a3)
+	move.w	#bfi_delay,bfi_counter(a3)
 
 ; Bar-Fader-Out 
 	move.w	d1,bfo_rgb4_active(a3)
-	move.w	#bfo_delay,bfo_delay_counter(a3)
+	move.w	#bfo_delay,bfo_counter(a3)
 
 ; Textwriter-Fader
 	move.w	#tf_rgb4_colors_number*3,tf_rgb4_colors_counter(a3)
@@ -1081,7 +1081,7 @@ init_main_variables
 
 ; Textwriter-Fader-Out
 	move.w	d1,tfo_rgb4_active(a3)
-	move.w	#tfo_delay,tfo_delay_counter(a3)
+	move.w	#tfo_delay,tfo_counter(a3)
 
 ; Scroll-Sprites-Bottom-In
 	move.w	d1,ssbi_active(a3)
@@ -1603,7 +1603,7 @@ tw_check_control_quit
 	rts
 	CNOP 0,4
 tw_line_break
-	move.w	#tw_delay,tw_delay_counter(a3)
+	move.w	#tw_delay,tw_counter(a3)
 	bsr	tw_clear_cursor
 	moveq	#tw_text_char_y_size+1,d0
 	add.w	d0,tw_text_char_y_position(a3) ; next text line
@@ -1617,9 +1617,9 @@ tw_line_break
 tw_stop_textwriter
 	bsr	tw_clear_cursor
 	moveq	#FALSE,d0
-	move.w	d0,tw_delay_counter(a3)	; disable counter
+	move.w	d0,tw_counter(a3)	; disable counter
 	move.w	d0,tw_cursor_active(a3)
- 	move.w	#ct_delay,ct_delay_counter(a3) ; start counter
+ 	move.w	#ct_delay,ct_counter(a3) ; start counter
 	moveq	#RETURN_OK,d0
 	bra.s	tw_check_control_quit
 
@@ -1694,8 +1694,8 @@ tw_display_cursor
  	bne.s	tw_display_cursor_skip
  	moveq	#FALSE,d1
 	move.w	d1,ct_backspace_active(a3)
-	move.w	d1,ct_backspace_delay_counter(a3)
-	move.w	#1,tw_delay_counter(a3)	; enable counter
+	move.w	d1,ct_backspace_counter(a3)
+	move.w	#1,tw_counter(a3)	; enable counter
 	clr.w	tw_active(a3)
 tw_display_cursor_skip
 	move.l	extra_pf2(a3),a1
@@ -2052,9 +2052,9 @@ rgb4_logo_fader_in
 	movem.l a4-a5,-(a7)
 	tst.w	lfi_rgb4_active(a3)
 	bne.s	rgb4_logo_fader_in_quit
-	subq.w	#1,lfi_delay_counter(a3)
+	subq.w	#1,lfi_counter(a3)
 	bne.s	rgb4_logo_fader_in_quit
-	move.w	#lfi_delay,lfi_delay_counter(a3)
+	move.w	#lfi_delay,lfi_counter(a3)
 	MOVEF.W lf_rgb4_colors_number*3,d6 ; RGB counter
 	lea	vp1_pf1_rgb4_color_table+(lf_rgb4_color_table_offset*WORD_SIZE)(pc),a0 ; colors buffer
 	lea	lfi_rgb4_color_table+(lf_rgb4_color_table_offset*WORD_SIZE)(pc),a1 ; destination colors
@@ -2066,7 +2066,7 @@ rgb4_logo_fader_in
 	move.w	d6,lf_rgb4_colors_counter(a3) ; fading finished ?
 	bne.s	rgb4_logo_fader_in_quit
 	move.w	#FALSE,lfi_rgb4_active(a3)
-	move.w	#1,tw_delay_counter(a3)	; enable counter
+	move.w	#1,tw_counter(a3)	; enable counter
 	clr.w	tw_cursor_active(a3)
 rgb4_logo_fader_in_quit
 	movem.l (a7)+,a4-a5
@@ -2078,9 +2078,9 @@ rgb4_logo_fader_out
 	movem.l a4-a5,-(a7)
 	tst.w	lfo_rgb4_active(a3)
 	bne.s	rgb4_logo_fader_out_quit
-	subq.w	#1,lfo_delay_counter(a3)
+	subq.w	#1,lfo_counter(a3)
 	bne.s	rgb4_logo_fader_out_quit
-	move.w	#lfo_delay,lfo_delay_counter(a3)
+	move.w	#lfo_delay,lfo_counter(a3)
 	MOVEF.W lf_rgb4_colors_number*3,d6 ; RGB counter
 	lea	vp1_pf1_rgb4_color_table+(lf_rgb4_color_table_offset*WORD_SIZE)(pc),a0 ; colors buffer
 	lea	lfo_rgb4_color_table+(lf_rgb4_color_table_offset*WORD_SIZE)(pc),a1 ; destination colors
@@ -2108,9 +2108,9 @@ rgb4_bar_fader_in
 	movem.l a4-a6,-(a7)
 	tst.w	bfi_rgb4_active(a3)
 	bne.s	rgb4_bar_fader_in_quit
-	subq.w	#1,bfi_delay_counter(a3)
+	subq.w	#1,bfi_counter(a3)
 	bne.s	rgb4_bar_fader_in_quit
-	move.w	#bfi_delay,bfi_delay_counter(a3)
+	move.w	#bfi_delay,bfi_counter(a3)
 	MOVEF.W bf_rgb4_colors_number*3,d6 ; RGB counter
 	lea	bf_rgb4_color_cache+(bf_rgb4_color_table_offset*WORD_SIZE)(pc),a0 ; colors buffer
 	lea	bfi_rgb4_color_table+(bf_rgb4_color_table_offset*WORD_SIZE)(pc),a1 ; destination colors
@@ -2132,9 +2132,9 @@ rgb4_bar_fader_out
 	movem.l a4-a6,-(a7)
 	tst.w	bfo_rgb4_active(a3)
 	bne.s	rgb4_bar_fader_out_quit
-	subq.w	#1,bfo_delay_counter(a3)
+	subq.w	#1,bfo_counter(a3)
 	bne.s	rgb4_bar_fader_out_quit
-	move.w	#bfo_delay,bfo_delay_counter(a3)
+	move.w	#bfo_delay,bfo_counter(a3)
 	MOVEF.W bf_rgb4_colors_number*3,d6 ; RGB counter
 	lea	bf_rgb4_color_cache+(bf_rgb4_color_table_offset*WORD_SIZE)(pc),a0 ; colors buffer
 	lea	bfo_rgb4_color_table+(bf_rgb4_color_table_offset*WORD_SIZE)(pc),a1 ; destination colors
@@ -2175,9 +2175,9 @@ rgb4_textwriter_fader_out
 	movem.l a4-a5,-(a7)
 	tst.w	tfo_rgb4_active(a3)
 	bne.s	rgb4_textwriter_fader_out_quit
-	subq.w	#1,tfo_delay_counter(a3)
+	subq.w	#1,tfo_counter(a3)
 	bne.s	rgb4_textwriter_fader_out_quit
-	move.w	#tfo_delay,tfo_delay_counter(a3)
+	move.w	#tfo_delay,tfo_counter(a3)
 	MOVEF.W tf_rgb4_colors_number*3,d6 ; RGB counter
 	lea	vp2_pf1_rgb4_color_table+(tf_rgb4_color_table_offset*WORD_SIZE)(pc),a0 ; colors buffer
 	lea	tfo_rgb4_color_table+(tf_rgb4_color_table_offset*WORD_SIZE)(pc),a1 ; destination colors
@@ -2303,36 +2303,36 @@ mouse_handler_skip4
 control_counters
 
 ; Textwriter
-	move.w	tw_delay_counter(a3),d0
+	move.w	tw_counter(a3),d0
 	bmi.s	control_counters_skip2
 	subq.w	#1,d0
 	bne.s	control_counters_skip1
 	MOVEF.W	tw_delay,d0		; reset counter
 	clr.w	tw_active(a3)
 control_counters_skip1
-	move.w	d0,tw_delay_counter(a3)
+	move.w	d0,tw_counter(a3)
 control_counters_skip2
 
 ; Clear-Text
-	move.w	ct_delay_counter(a3),d0
+	move.w	ct_counter(a3),d0
 	bmi.s	control_counters_skip4
 	subq.w	#1,d0
 	bne.s	control_counters_skip3
-	move.w	#ct_backspace_delay,ct_backspace_delay_counter(a3)
+	move.w	#ct_backspace_delay,ct_backspace_counter(a3)
 	clr.w	tw_cursor_active(a3)
 control_counters_skip3
-	move.w	d0,ct_delay_counter(a3)
+	move.w	d0,ct_counter(a3)
 control_counters_skip4
 
 ; Backspace
-	move.w	ct_backspace_delay_counter(a3),d0
+	move.w	ct_backspace_counter(a3),d0
 	bmi.s	control_counters_skip6
 	subq.w	#1,d0
 	bne.s	control_counters_skip5
 	MOVEF.W	ct_backspace_delay,d0	; continuous counter
 	clr.w	ct_backspace_active(a3)
 control_counters_skip5
-	move.w	d0,ct_backspace_delay_counter(a3)
+	move.w	d0,ct_backspace_counter(a3)
 control_counters_skip6
 	rts
 
